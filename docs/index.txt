@@ -1,0 +1,33 @@
+=======================================================
+TiMPE - Transactions in Massively Parallel Environments
+=======================================================
+
+The project 'TiMPE' focuses on a 'user to user' transaction system which
+was implemented as a prototype for the project `Validate Your Idea`_
+(`VYI`_).
+
+"[...] [VYI] serves as a showcase and demonstrates how one can develop an
+application using the `eventually consistent` data base `Crate Data`_.
+Crate Data does not provide a transaction system such as locking, but
+offers what is called multi-version concurrency control (`MVCC`_).
+Therefore, different techniques must be used to achieve data consistency.
+Especially in modern applications where many simultaneous requests are
+being made." Lukas Ender, May 2014 `VYI`_
+
+Contents
+========
+
+.. toctree::
+   :maxdepth: 3
+
+   setup.txt
+   transactions.txt
+   u2u_transactions.txt
+
+.. _`Validate Your Idea`: https://github.com/lumannnn/vyi
+
+.. _`VYI`: https://github.com/lumannnn/vyi/docs
+
+.. _`MVCC`: http://en.wikipedia.org/wiki/Multiversion_concurrency_control
+
+.. _`Crate Data`: https://crate.io/

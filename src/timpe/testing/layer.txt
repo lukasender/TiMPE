@@ -1,0 +1,47 @@
+================
+Crate Test Layer
+================
+
+This layer starts and stops a ``Crate`` instance on a given port and
+a given crate node name::
+
+    >>> from crate.testing.layer import CrateLayer
+    >>> import random
+
+    >>> port = 44209
+    >>> transport_port = 44309
+
+    >>> layer =  CrateLayer('crate',
+    ...                     crate_home=crate_path(),
+    ...                     crate_exec=crate_path('bin', 'crate'),
+    ...                     port=port,
+    ...                     transport_port=transport_port
+    ... )
+
+The working directory is defined on layer instantiation.
+It is sometimes required to know it before starting the layer::
+
+    >>> layer.wdPath()
+    '.../crate.testing.layer.CrateLayer.crate/work'
+
+Lets start the layer::
+
+    >>> layer.start()
+
+
+Now we can access the ``Crate`` instance on the defined port::
+
+    >>> import urllib3
+    >>> http = urllib3.PoolManager()
+
+    >>> stats_uri = "http://127.0.0.1:{0}/".format(port)
+    >>> response = http.request('GET', stats_uri)
+    >>> response.status
+    200
+
+
+The layer can be shutdown using its ``stop()`` method::
+
+    >>> layer.stop()
+
+

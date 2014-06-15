@@ -1,0 +1,27 @@
+path:
+    logs:  ${crate:log_dir}
+    data:  ${crate:data_dir}
+discovery:
+    type: zen
+    zen:
+        ping:
+            multicast:
+                enabled:  ${crate:multicast}
+cluster:
+    name: ${crate:cluster_name}
+
+es.api.enabled: true
+
+rootLogger: DEBUG, console
+
+logger:
+  # log action execution errors for easier debugging
+  action: DEBUG
+
+
+appender:
+  console:
+    type: console
+    layout:
+      type: consolePattern
+      conversionPattern: "[%d{ISO8601}][%-5p][%-25c] %m%n"
