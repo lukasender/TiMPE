@@ -174,8 +174,8 @@ class TransactionsService(object):
         self._update_balance_sender(transaction, 'pending')
         self._update_balance_recipient(transaction, 'pending')
         self.util.set_transaction_state(transaction, 'committed')
-        self._update_pending_user_transaction_sender(transaction)
-        self._update_pending_user_transaction_recipient(transaction)
+        self._update_pending_user_transaction(transaction['sender'], transaction)
+        self._update_pending_user_transaction(transaction['recipient'], transaction)
         return self.util.set_transaction_state(transaction, 'finished',
                                                occ_safe=True)
 
@@ -191,8 +191,8 @@ class TransactionsService(object):
         if u_ta_recipient is None:
             self._update_balance_recipient(transaction, 'pending')
         self.util.set_transaction_state(transaction, 'committed')
-        self._update_pending_user_transaction_sender(transaction)
-        self._update_pending_user_transaction_recipient(transaction)
+        self._update_pending_user_transaction(transaction['sender'], transaction)
+        self._update_pending_user_transaction(transaction['recipient'], transaction)
         return self.util.set_transaction_state(transaction, 'finished',
                                                occ_safe=True)
 
@@ -204,9 +204,9 @@ class TransactionsService(object):
         u_ta_sender = user_transactions['sender']
         u_ta_recipient = user_transactions['recipient']
         if u_ta_sender['state'] == 'pending':
-            self._update_pending_user_transaction_sender(transaction)
+            self._update_pending_user_transaction(transaction['sender'], transaction)
         if u_ta_recipient['state'] == 'pending':
-            self._update_pending_user_transaction_recipient(transaction)
+            self._update_pending_user_transaction(transaction['recipient'], transaction)
         return self.util.set_transaction_state(transaction, 'finished',
                                                occ_safe=True)
 
@@ -240,17 +240,11 @@ class TransactionsService(object):
             state=state
         )
 
-    def _update_pending_user_transaction_sender(self, transaction):
+    def _update_pending_user_transaction(self, user_id, transaction):
         transaction_id = transaction['id']
-        user_id = transaction['sender']
         self.util.update_pending_user_transaction(transaction_id,
                                                   user_id)
 
-    def _update_pending_user_transaction_recipient(self, transaction):
-        transaction_id = transaction['id']
-        user_id = transaction['recipient']
-        self.util.update_pending_user_transaction(transaction_id,
-                                                  user_id)
 
 def bad_request(msg=None):
     # TODO: 403
