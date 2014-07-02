@@ -213,6 +213,11 @@ developer to insert transactions, but the 2. phase of the 2PC will be started.
 The parameter ``-i`` uses the endpoint ``/transactions/immediately`` and thus,
 the 2. phase of the 2PC is immediately started.
 
+To verify, run the two commands:
+
+    echo 'SELECT * FROM users' | ./bin/crash
+    echo 'SELECT user_id, sum(amount) FROM user_transactions GROUP BY user_id' | bin/crash
+
 CAUTION: `.bin/u2u_transactions` uses the scripts `cleanup, setup and testdata`.
 As a result, all data in the affected tables is lost.
 

@@ -24,6 +24,28 @@ Contents
    transactions.txt
    u2u_transactions.txt
 
+Run the test script:
+
+.. image:: images/u2u.png
+    :width: 500px
+    :height: 500px
+    :alt: run the test script: 200 transactions with 100 concurrent threads.
+    :align: center
+
+Calculate the user balance with ``./bin/crash``:
+
+.. image:: images/select-user-balance.png
+    :width: 500px
+    :height: 500px
+    :alt: Calculation of all user balances
+    :align: center
+
+Helpful statements:
+
+``SELECT * FROM users``
+
+``'SELECT user_id, sum(amount) FROM user_transactions GROUP BY user_id'``
+
 .. _`Validate Your Idea`: https://github.com/lumannnn/vyi
 
 .. _`VYI`: https://github.com/lumannnn/vyi/docs
