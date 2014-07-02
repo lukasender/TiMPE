@@ -1,0 +1,176 @@
+Transaction system
+==================
+
+The theory behind
+-----------------
+
+The transaction system relies on a two phase commit (2PC) implementation
+and a carefully chosen data model.
+
+The first phase accepts the transaction and stores it in the table
+``transactions`` as a preparation for the second phase. The second phase is
+a sequence of operations, as described in the following section.
+
+Transfer balance from one user to another
+-----------------------------------------
+
+Assume there are the two users 'elon_musk' and 'nikola_tesla'. Every user
+has a unique ``id``. In the application, the id of a user is the `SHA-1`_
+value of the users' nickname. In the following examples, simple numbers are
+used to illustrate the different steps. Any other id, such as the one used
+for identifying a transaction, is a `UUID`_.
+
++----------------------+
+| users                |
++-------+--------------+
+| id    | nickname     |
++=======+==============+
+| 10    | elon_musk    |
++-------+--------------+
+| 11    | nikola_tesla |
++-------+--------------+
+
+The different states of a transaction
+-------------------------------------
+
+.. _transactions_steps_step1:
+
+1. step
+.......
+
+The user 'elon_musk' wants to transfer 1338 of his balance to
+'nikola_tesla'.
+
++----------------------------------------------------------+
+| transactions                                             |
++----+--------+-----------+--------+-----------+-----------+
+| id | sender | recipient | amount | state     | timestamp |
++====+========+===========+========+===========+===========+
+| 47 | 10     | 11        | 1338   | "initial" | ...       |
++----+--------+-----------+--------+-----------+-----------+
+
+The transaction is recorded in the system. The first phase of the 2PC is
+done. A user can be sure that the transaction is getting processed
+eventually.
+
+.. note::
+
+    The ``timestamp`` is merely for documentation purposes. It does not get
+    updated nor is it used by any other operation.
+
+.. _transactions_steps_step2:
+
+2. step
+.......
+
+The second phase of the 2PC starts. The transaction is marked as "in progress".
+
++----------------------------------------------------------------+
+| transactions                                                   |
++----+--------+-----------+--------+-----------------+-----------+
+| id | sender | recipient | amount | state           | timestamp |
++====+========+===========+========+=================+===========+
+| 47 | 10     | 11        | 1338   | `"in progress"` | ...       |
++----+--------+-----------+--------+-----------------+-----------+
+
+.. _transactions_steps_step3:
+
+3. step
+........
+
+After the transaction is marked as "in progress", the amount can be
+transferred from one user to another. Using the 'append only'-technique,
+adding or removing balance from a user account is done by inserting a
+record into the ``user_transactions`` table.
+
+As a result, a record with ``amount * (-1)`` and ``amount * 1`` is added
+for the sender and recipient respectively. Both records are marked as
+"pending".
+
++------------------------------------------------------------------+
+| user_transactions                                                |
++------+---------+----------------+--------+-----------+-----------+
+| id   | user_id | transaction_id | amount | timestamp | state     |
++======+=========+================+========+===========+===========+
+| 1338 | 1       | 47             | -1338  | ...       | "pending" |
++------+---------+----------------+--------+-----------+-----------+
+| 4711 | 2       | 47             | 1338   | ...       | "pending" |
++------+---------+----------------+--------+-----------+-----------+
+
+.. note::
+
+    Each record is inserted by a single operation which is indicated by the
+    ``timestamp``.
+
+.. note::
+
+    As already noted in :ref:`transactions_steps_step1`, the ``timestamp``
+    is  merely for documentation purposes. It does not get updated nor is
+    it used by any other operation.
+
+.. _transactions_steps_step4:
+
+4. step
+.......
+
+The transaction can now be marked as "committed".
+
++--------------------------------------------------------------+
+| transactions                                                 |
++----+--------+-----------+--------+---------------+-----------+
+| id | sender | recipient | amount | state         | timestamp |
++====+========+===========+========+===============+===========+
+| 47 | 10     | 11        | 1338   | `"committed"` | ...       |
++----+--------+-----------+--------+---------------+-----------+
+
+.. note::
+
+    This is not an essential step for a successful transaction and one
+    could implement a similar transaction system without such a step. It is
+    merely an optimisation. When a transaction failed and a process tries
+    to repair (e.g. finish) the transaction, the process does not need to
+    check if the ``user_transactions`` is updated already. This saves
+    additional SQL queries for each transaction. The process can simply
+    continue with step 5.
+
+.. _transactions_steps_step5:
+
+5. step
+.......
+
+The records in ``user_transactions`` can now be marked as "finished".
+
++---------------------------------------------------------------------+
+| user_transactions                                                   |
++------+---------+----------------+--------+-----------+--------------+
+| id   | user_id | transaction_id | amount | timestamp | state        |
++======+=========+================+========+===========+==============+
+| 1338 | 10      | 47             | -1338  | ...       | `"finished"` |
++------+---------+----------------+--------+-----------+--------------+
+| 4711 | 11      | 47             | 1338   | ...       | `"finished"` |
++------+---------+----------------+--------+-----------+--------------+
+
+.. note::
+
+    Similar as noted in :ref:`transactions_steps_step3`, each record is
+    update by a single operation.
+
+.. _transactions_steps_step6:
+
+6. step
+.......
+
+The final step updates the transaction once again marking it as "finished".
+
++-------------------------------------------------------------+
+| transactions                                                |
++----+--------+-----------+--------+--------------+-----------+
+| id | sender | recipient | amount | state        | timestamp |
++====+========+===========+========+==============+===========+
+| 47 | 10     | 11        | 1338   | `"finished"` | ...       |
++----+--------+-----------+--------+--------------+-----------+
+
+
+.. _`SHA-1`: http://en.wikipedia.org/wiki/SHA-1
+
+.. _`UUID`: http://en.wikipedia.org/wiki/Universally_unique_identifier

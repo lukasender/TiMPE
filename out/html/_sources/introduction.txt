@@ -1,0 +1,50 @@
+.. highlight:: python
+
+.. _app_setup:
+
+Application setup
+=================
+
+The application setup is the same as in `VYI`_ with the main goal to be
+close to a production alike setup.
+
+"The application being a web application, HTTP requests need to be handled
+and processed. A load balancer (`HAProxy`_) distributes the requests to one
+of the `application nodes`. A `application node` is a single
+`Lovely.PyRest`_ application. A `Crate Data`_ database cluster operating
+two Crate Data nodes is used as the persistent layer.
+
+Crate Data is a shared-nothing data base. It was therefore tried
+to achieve similar `shared nothing` properties for the whole application.
+Each application node does not require to share any common properties
+amongst other application nodes.
+
+Though, there is one `caveat`: as of now, there is no `production`
+configuration, only a `development` configuration. The configuration is
+split into different parts and can be found in the ``./etc/*.in`` files.
+For simplicity, the development setup is meant to be run on a single
+machine not requiring any setup including several different virtual
+machines. The development setup needs to configure the connection ports for
+the application nodes and the Crate Data nodes. The ports can be configured
+via ``[ports]`` section in the ``./buildout.cfg``. In contrast to the
+development setup, a production setup would most probably run each
+application node and Crate Data node on a single machine." Lukas Ender, May
+2014 `VYI`_
+
+
+
+.. _`VYI`: https://github.com/lumannnn/vyi/docs
+
+.. _`Crate Data`: https://crate.io/
+
+.. _`HAProxy`: http://haproxy.1wt.eu/
+
+.. _`2PC`: http://en.wikipedia.org/wiki/Two-phase_commit_protocol
+
+.. _`Lovely.PyRest`: https://pypi.python.org/pypi/lovely.pyrest
+
+.. _`Shared nothing architecture`: http://en.wikipedia.org/wiki/Shared_nothing_architecture
+
+.. _`CAP`: http://en.wikipedia.org/wiki/CAP_theorem
+
+.. _`ACID`: http://en.wikipedia.org/wiki/ACID

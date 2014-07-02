@@ -1,0 +1,477 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Transaction system &mdash; Validate your idea 0.1.0 documentation</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="Validate your idea 0.1.0 documentation" href="index.html"/>
+        <link rel="next" title="TiMPE - User to User (u2u) transactions" href="u2u_transactions.html"/>
+        <link rel="prev" title="Application setup" href="setup.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        <a href="index.html" class="fa fa-home"> Validate your idea</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+        
+            <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="setup.html">Application setup</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">Transaction system</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#the-theory-behind">The theory behind</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#transfer-balance-from-one-user-to-another">Transfer balance from one user to another</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#the-different-states-of-a-transaction">The different states of a transaction</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="u2u_transactions.html">TiMPE - User to User (u2u) transactions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="u2u_transactions.html#introduction">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="u2u_transactions.html#first-phase-of-the-2pc">First phase of the 2PC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="u2u_transactions.html#second-phase-of-the-2pc">Second phase of the 2PC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="u2u_transactions.html#test-edge-and-error-cases">Test edge and error cases</a></li>
+</ul>
+</li>
+</ul>
+
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">Validate your idea</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>Transaction system</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="_sources/transactions.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            
+  <div class="section" id="transaction-system">
+<h1>Transaction system<a class="headerlink" href="#transaction-system" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="the-theory-behind">
+<h2>The theory behind<a class="headerlink" href="#the-theory-behind" title="Permalink to this headline">¶</a></h2>
+<p>The transaction system relies on a two phase commit (2PC) implementation
+and a carefully chosen data model.</p>
+<p>The first phase accepts the transaction and stores it in the table
+<tt class="docutils literal"><span class="pre">transactions</span></tt> as a preparation for the second phase. The second phase is
+a sequence of operations, as described in the following section.</p>
+</div>
+<div class="section" id="transfer-balance-from-one-user-to-another">
+<h2>Transfer balance from one user to another<a class="headerlink" href="#transfer-balance-from-one-user-to-another" title="Permalink to this headline">¶</a></h2>
+<p>Assume there are the two users &#8216;elon_musk&#8217; and &#8216;nikola_tesla&#8217;. Every user
+has a unique <tt class="docutils literal"><span class="pre">id</span></tt>. In the application, the id of a user is the <a class="reference external" href="http://en.wikipedia.org/wiki/SHA-1">SHA-1</a>
+value of the users&#8217; nickname. In the following examples, simple numbers are
+used to illustrate the different steps. Any other id, such as the one used
+for identifying a transaction, is a <a class="reference external" href="http://en.wikipedia.org/wiki/Universally_unique_identifier">UUID</a>.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="33%" />
+<col width="67%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head" colspan="2">users</th>
+</tr>
+<tr class="row-even"><th class="head">id</th>
+<th class="head">nickname</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-odd"><td>10</td>
+<td>elon_musk</td>
+</tr>
+<tr class="row-even"><td>11</td>
+<td>nikola_tesla</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="the-different-states-of-a-transaction">
+<h2>The different states of a transaction<a class="headerlink" href="#the-different-states-of-a-transaction" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="step">
+<span id="transactions-steps-step1"></span><h3>1. step<a class="headerlink" href="#step" title="Permalink to this headline">¶</a></h3>
+<p>The user &#8216;elon_musk&#8217; wants to transfer 1338 of his balance to
+&#8216;nikola_tesla&#8217;.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="8%" />
+<col width="15%" />
+<col width="21%" />
+<col width="15%" />
+<col width="21%" />
+<col width="21%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head" colspan="6">transactions</th>
+</tr>
+<tr class="row-even"><th class="head">id</th>
+<th class="head">sender</th>
+<th class="head">recipient</th>
+<th class="head">amount</th>
+<th class="head">state</th>
+<th class="head">timestamp</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-odd"><td>47</td>
+<td>10</td>
+<td>11</td>
+<td>1338</td>
+<td>&#8220;initial&#8221;</td>
+<td>...</td>
+</tr>
+</tbody>
+</table>
+<p>The transaction is recorded in the system. The first phase of the 2PC is
+done. A user can be sure that the transaction is getting processed
+eventually.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The <tt class="docutils literal"><span class="pre">timestamp</span></tt> is merely for documentation purposes. It does not get
+updated nor is it used by any other operation.</p>
+</div>
+</div>
+<div class="section" id="transactions-steps-step2">
+<span id="id1"></span><h3>2. step<a class="headerlink" href="#transactions-steps-step2" title="Permalink to this headline">¶</a></h3>
+<p>The second phase of the 2PC starts. The transaction is marked as &#8220;in progress&#8221;.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="7%" />
+<col width="14%" />
+<col width="19%" />
+<col width="14%" />
+<col width="29%" />
+<col width="19%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head" colspan="6">transactions</th>
+</tr>
+<tr class="row-even"><th class="head">id</th>
+<th class="head">sender</th>
+<th class="head">recipient</th>
+<th class="head">amount</th>
+<th class="head">state</th>
+<th class="head">timestamp</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-odd"><td>47</td>
+<td>10</td>
+<td>11</td>
+<td>1338</td>
+<td><cite>&#8220;in progress&#8221;</cite></td>
+<td>...</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="transactions-steps-step3">
+<span id="id2"></span><h3>3. step<a class="headerlink" href="#transactions-steps-step3" title="Permalink to this headline">¶</a></h3>
+<p>After the transaction is marked as &#8220;in progress&#8221;, the amount can be
+transferred from one user to another. Using the &#8216;append only&#8217;-technique,
+adding or removing balance from a user account is done by inserting a
+record into the <tt class="docutils literal"><span class="pre">user_transactions</span></tt> table.</p>
+<p>As a result, a record with <tt class="docutils literal"><span class="pre">amount</span> <span class="pre">*</span> <span class="pre">(-1)</span></tt> and <tt class="docutils literal"><span class="pre">amount</span> <span class="pre">*</span> <span class="pre">1</span></tt> is added
+for the sender and recipient respectively. Both records are marked as
+&#8220;pending&#8221;.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="10%" />
+<col width="15%" />
+<col width="26%" />
+<col width="13%" />
+<col width="18%" />
+<col width="18%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head" colspan="6">user_transactions</th>
+</tr>
+<tr class="row-even"><th class="head">id</th>
+<th class="head">user_id</th>
+<th class="head">transaction_id</th>
+<th class="head">amount</th>
+<th class="head">timestamp</th>
+<th class="head">state</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-odd"><td>1338</td>
+<td>1</td>
+<td>47</td>
+<td>-1338</td>
+<td>...</td>
+<td>&#8220;pending&#8221;</td>
+</tr>
+<tr class="row-even"><td>4711</td>
+<td>2</td>
+<td>47</td>
+<td>1338</td>
+<td>...</td>
+<td>&#8220;pending&#8221;</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Each record is inserted by a single operation which is indicated by the
+<tt class="docutils literal"><span class="pre">timestamp</span></tt>.</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">As already noted in <a class="reference internal" href="#transactions-steps-step1"><em>1. step</em></a>, the <tt class="docutils literal"><span class="pre">timestamp</span></tt>
+is  merely for documentation purposes. It does not get updated nor is
+it used by any other operation.</p>
+</div>
+</div>
+<div class="section" id="transactions-steps-step4">
+<span id="id3"></span><h3>4. step<a class="headerlink" href="#transactions-steps-step4" title="Permalink to this headline">¶</a></h3>
+<p>The transaction can now be marked as &#8220;committed&#8221;.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="7%" />
+<col width="14%" />
+<col width="19%" />
+<col width="14%" />
+<col width="26%" />
+<col width="19%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head" colspan="6">transactions</th>
+</tr>
+<tr class="row-even"><th class="head">id</th>
+<th class="head">sender</th>
+<th class="head">recipient</th>
+<th class="head">amount</th>
+<th class="head">state</th>
+<th class="head">timestamp</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-odd"><td>47</td>
+<td>10</td>
+<td>11</td>
+<td>1338</td>
+<td><cite>&#8220;committed&#8221;</cite></td>
+<td>...</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This is not an essential step for a successful transaction and one
+could implement a similar transaction system without such a step. It is
+merely an optimisation. When a transaction failed and a process tries
+to repair (e.g. finish) the transaction, the process does not need to
+check if the <tt class="docutils literal"><span class="pre">user_transactions</span></tt> is updated already. This saves
+additional SQL queries for each transaction. The process can simply
+continue with step 5.</p>
+</div>
+</div>
+<div class="section" id="transactions-steps-step5">
+<span id="id4"></span><h3>5. step<a class="headerlink" href="#transactions-steps-step5" title="Permalink to this headline">¶</a></h3>
+<p>The records in <tt class="docutils literal"><span class="pre">user_transactions</span></tt> can now be marked as &#8220;finished&#8221;.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="9%" />
+<col width="14%" />
+<col width="25%" />
+<col width="13%" />
+<col width="17%" />
+<col width="22%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head" colspan="6">user_transactions</th>
+</tr>
+<tr class="row-even"><th class="head">id</th>
+<th class="head">user_id</th>
+<th class="head">transaction_id</th>
+<th class="head">amount</th>
+<th class="head">timestamp</th>
+<th class="head">state</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-odd"><td>1338</td>
+<td>10</td>
+<td>47</td>
+<td>-1338</td>
+<td>...</td>
+<td><cite>&#8220;finished&#8221;</cite></td>
+</tr>
+<tr class="row-even"><td>4711</td>
+<td>11</td>
+<td>47</td>
+<td>1338</td>
+<td>...</td>
+<td><cite>&#8220;finished&#8221;</cite></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Similar as noted in <a class="reference internal" href="#transactions-steps-step3"><em>3. step</em></a>, each record is
+update by a single operation.</p>
+</div>
+</div>
+<div class="section" id="transactions-steps-step6">
+<span id="id5"></span><h3>6. step<a class="headerlink" href="#transactions-steps-step6" title="Permalink to this headline">¶</a></h3>
+<p>The final step updates the transaction once again marking it as &#8220;finished&#8221;.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="7%" />
+<col width="14%" />
+<col width="20%" />
+<col width="14%" />
+<col width="25%" />
+<col width="20%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head" colspan="6">transactions</th>
+</tr>
+<tr class="row-even"><th class="head">id</th>
+<th class="head">sender</th>
+<th class="head">recipient</th>
+<th class="head">amount</th>
+<th class="head">state</th>
+<th class="head">timestamp</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-odd"><td>47</td>
+<td>10</td>
+<td>11</td>
+<td>1338</td>
+<td><cite>&#8220;finished&#8221;</cite></td>
+<td>...</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="u2u_transactions.html" class="btn btn-neutral float-right" title="TiMPE - User to User (u2u) transactions"/>Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="setup.html" class="btn btn-neutral" title="Application setup"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014, Lukas Ender.
+    </p>
+  </div>
+
+  <a href="https://github.com/snide/sphinx_rtd_theme">Sphinx theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
