@@ -64,7 +64,7 @@ class TransactionsService(object):
             self._transaction_user_to_user(sender, recipient, amount)
             return {"status": "success"}
         except ProcessError, e:
-            return bad_request(e.msg)
+            return bad_request(e.msg, self.request)
 
     @rpcmethod_route(route_suffix="/immediately", request_method="POST")
     @validate(TRANSACTIONS_SCHEMA)
@@ -77,7 +77,7 @@ class TransactionsService(object):
                 return {"status": "success"}
             return result
         except ProcessError, e:
-            return bad_request(e.msg)
+            return bad_request(e.msg, self.request)
 
     def _transaction_user_to_user(self, sender, recipient, amount):
         if amount <= 0:
@@ -246,8 +246,9 @@ class TransactionsService(object):
                                                   user_id)
 
 
-def bad_request(msg=None):
-    # TODO: 403
+def bad_request(msg=None, request=None):
+    if request:
+        request.response.status = 400
     br = {"status": "failed"}
     if msg:
         br['msg'] = msg

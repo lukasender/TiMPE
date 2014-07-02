@@ -1,5 +1,6 @@
 from lovely.pyrest.rest import RestService, rpcmethod_route
 from lovely.pyrest.validation import validate
+from crate.client.exceptions import ProgrammingError
 
 from timpe.app.model import CRATE_CONNECTION, genid, genuuid
 
@@ -83,8 +84,10 @@ class UserService(object):
         user_id = genid(nickname)
         # add user
         stmt = "INSERT INTO users (id, nickname) VALUES (?, ?)"
-        cursor.execute(stmt, (user_id, nickname,))
-        if cursor.rowcount != 1:
+        try:
+            cursor.execute(stmt, (user_id, nickname,))
+        except ProgrammingError:
+            self.request.response.status = 400
             return {"status": "failed"}
         # initialise the user's transaction table
         stmt = "INSERT INTO user_transactions "\
@@ -92,8 +95,10 @@ class UserService(object):
                "VALUES (?,?,?,?,?,?)"
         ta_id = genuuid()
         args = (ta_id, user_id, time.time(), balance, "register", "finished",)
-        cursor.execute(stmt, args)
-        if cursor.rowcount != 1:
+        try:
+            cursor.execute(stmt, args)
+        except ProgrammingError:
+            self.request.response.status = 400
             return {"status": "failed"}
         cursor.execute("REFRESH TABLE users")
         cursor.execute("REFRESH TABLE user_transactions")
