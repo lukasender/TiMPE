@@ -5,14 +5,11 @@ The theory behind
 -----------------
 
 The transaction system relies on a two phase commit (2PC) implementation
-and a carefully chosen data mapping.
+and a carefully chosen data model.
 
-The 2PC can be described as a more traditional one. The first phase accepts
-the transaction and stores it in  the table ``transactions`` as a
-preparation for the second phase. The second phase is a sequence of
-operations. The operations can be divided into two categories. Operations
-which bring the a transaction to the next state, or modifying data. Each
-operation leaves data in a consistent state.
+The first phase accepts the transaction and stores it in the table
+``transactions`` as a preparation for the second phase. The second phase is
+a sequence of operations, as described in the following section.
 
 Transfer balance from one user to another
 -----------------------------------------
@@ -172,11 +169,6 @@ The final step updates the transaction once again marking it as "finished".
 +====+========+===========+========+==============+===========+
 | 47 | 10     | 11        | 1338   | `"finished"` | ...       |
 +----+--------+-----------+--------+--------------+-----------+
-
-
-Error and edge cases
---------------------
-
 
 
 .. _`SHA-1`: http://en.wikipedia.org/wiki/SHA-1
