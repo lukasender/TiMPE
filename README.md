@@ -1,5 +1,4 @@
 # TiMPE - Transactions in Massively Parallel Environments
----------------------------------------------------------
 
 TiMPE is a prototype and allows `User to User transactions` (u2u) using the
 eventually consitent datastore Crate Data. Users can be reigstered. Via the
@@ -19,6 +18,8 @@ The service of the app TiMPE is available via the API through
 [http://localhost:9100](http://localhost:9100). Data is exchanged via JSON.
 
 **REST API Endpoints:**
+
+------------------------
 
 ```
 GET /users
@@ -103,7 +104,6 @@ The local topology of the individual services looks as follows:
 ```
 
 # Development Setup & Requirements
-----------------------------------
 
 Installation setup is optimised for OS X (migrating to *NIX shouldn't be a
 big problem) - Sorry in advance, if you are not an OS X user :)
@@ -166,7 +166,7 @@ The status interface for the HAProxy is available at
 [http://localhost:9100/__haproxy_stats](http://localhost:9100/__haproxy_stats)
 
 # Crate Data Database
----------------------
+
 ## Setup
 
 To initialize a empty Crate Data database run the command:
@@ -193,7 +193,6 @@ To initialize the Crate Data database with some test data, run the command:
 Currently, the test data consists of 4 users (see `./etc/crate_testdata.sh`).
 
 # Test Framework
-----------------
 
 Run the test framework with the command:
 
@@ -222,7 +221,6 @@ CAUTION: `.bin/u2u_transactions` uses the scripts `cleanup, setup and testdata`.
 As a result, all data in the affected tables is lost.
 
 # Documentation
----------------
 
 Generate a documentation by running the command
 
