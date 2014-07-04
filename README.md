@@ -17,6 +17,9 @@ is sparsely documented and not ready for a production setup.)
 The service of the app TiMPE is available via the API through
 [http://localhost:9100](http://localhost:9100). Data is exchanged via JSON.
 
+The major part of the prototype is implemented in
+`./src/timpe/app/transactions/*`.
+
 **REST API Endpoints:**
 
 ------------------------
