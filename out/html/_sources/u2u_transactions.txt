@@ -7,14 +7,11 @@ TiMPE - User to User (u2u) transactions
 Introduction
 ============
 
-This test suite tests the 2 phase-commit transaction implementation.
+This test suite tests the  two-phase commit protocol implementation.
 
-A user can transfer balance from his account to another users' account.
-The transaction process is performed via a 2 phase-commit.
-
-The first phase accepts a new transaction from a user.
-The second phase transfers the amount from the sender to the recipient and takes
-care of data consistency.
+The first phase accepts a new transaction from a user. The second phase
+transfers the amount from the sender to the recipient and takes care of
+data consistency.
 
 Setup of the suite
 ------------------

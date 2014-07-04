@@ -7,7 +7,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Transaction system &mdash; Validate your idea 0.1.0 documentation</title>
+  <title>Transaction System &mdash; TiMPE 0.1.0 documentation</title>
   
 
   
@@ -28,7 +28,7 @@
   
 
   
-    <link rel="top" title="Validate your idea 0.1.0 documentation" href="index.html"/>
+    <link rel="top" title="TiMPE 0.1.0 documentation" href="index.html"/>
         <link rel="next" title="TiMPE - User to User (u2u) transactions" href="u2u_transactions.html"/>
         <link rel="prev" title="Application setup" href="setup.html"/> 
 
@@ -44,7 +44,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-nav-search">
-        <a href="index.html" class="fa fa-home"> Validate your idea</a>
+        <a href="index.html" class="fa fa-home"> TiMPE</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -59,10 +59,11 @@
         
             <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="setup.html">Application setup</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="">Transaction system</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#the-theory-behind">The theory behind</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">Transaction System</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#the-theory-behind">The Theory Behind</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#transfer-balance-from-one-user-to-another">Transfer balance from one user to another</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#the-different-states-of-a-transaction">The different states of a transaction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#calculating-the-current-user-balance">Calculating the Current User Balance</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="u2u_transactions.html">TiMPE - User to User (u2u) transactions</a><ul>
@@ -84,7 +85,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="index.html">Validate your idea</a>
+        <a href="index.html">TiMPE</a>
       </nav>
 
 
@@ -95,7 +96,7 @@
   <ul class="wy-breadcrumbs">
     <li><a href="index.html">Docs</a> &raquo;</li>
       
-    <li>Transaction system</li>
+    <li>Transaction System</li>
       <li class="wy-breadcrumbs-aside">
         
           <a href="_sources/transactions.txt" rel="nofollow"> View page source</a>
@@ -107,22 +108,123 @@
           <div role="main">
             
   <div class="section" id="transaction-system">
-<h1>Transaction system<a class="headerlink" href="#transaction-system" title="Permalink to this headline">¶</a></h1>
+<h1>Transaction System<a class="headerlink" href="#transaction-system" title="Permalink to this headline">¶</a></h1>
+<p>This prototype safely processes a user transaction in a shared nothing
+environment, where no centralised transaction manager is required. This is
+achieved by the append-only technique in combination with a suitable data
+model and a two-phase commit protocol. Once a transaction is persisted in
+the transactions table, it can always be repaired.</p>
 <div class="section" id="the-theory-behind">
-<h2>The theory behind<a class="headerlink" href="#the-theory-behind" title="Permalink to this headline">¶</a></h2>
-<p>The transaction system relies on a two phase commit (2PC) implementation
-and a carefully chosen data model.</p>
-<p>The first phase accepts the transaction and stores it in the table
-<tt class="docutils literal"><span class="pre">transactions</span></tt> as a preparation for the second phase. The second phase is
-a sequence of operations, as described in the following section.</p>
+<h2>The Theory Behind<a class="headerlink" href="#the-theory-behind" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="append-only">
+<h3>Append-Only<a class="headerlink" href="#append-only" title="Permalink to this headline">¶</a></h3>
+<p>The &#8220;append-only&#8221; technique does not perform in-place updates, but adds
+new data only. For instance, take a counter which gets incremented by
+several concurrent clients.</p>
+<p>Each increment operation can be represented by one record. As Bailis and
+Ghodsi described in their work &#8220;Eventual Consistency Today: Limitations,
+Extensions, and Beyond&#8221;<a class="reference external" href="http://doi.acm.org/10.1145/2460276.2462076">[BG13]</a>, one could use a list of some sort and add
+(append) an element to that list for every counter increment. &#8220;[...] the
+current counter status is represented as the count of distinct increment
+invocations, similar to how counting is introduced at the grade-school
+level: by making a tally mark for every increment then summing the total.&#8221;</p>
+<p>Using Crate Data, or any database which has tables for that matter, one can
+simply INSERT a value for every counter increment. Depending on the
+increment operation, the value can be any arbitrary number. Summing all
+stored values in that table yields the total number of increments. Using
+SQL, this can be done by performing a SELECT with the SUM() aggregation.</p>
+</div>
+<div class="section" id="data-model">
+<h3>Data model<a class="headerlink" href="#data-model" title="Permalink to this headline">¶</a></h3>
+<div class="code psql highlight-psql"><div class="highlight"><pre><span class="c1">-- SQL dialect: Crate Data 0.38.7</span>
+<span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">users</span> <span class="p">(</span>
+    <span class="n">id</span> <span class="n">string</span> <span class="k">PRIMARY</span> <span class="k">KEY</span><span class="p">,</span>
+    <span class="n">nickname</span> <span class="n">string</span> <span class="k">PRIMARY</span> <span class="k">KEY</span>
+<span class="p">);</span>
+</pre></div>
+</div>
+<div class="code psql highlight-psql"><div class="highlight"><pre><span class="c1">-- SQL dialect: Crate Data 0.38.7</span>
+<span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">transactions</span> <span class="p">(</span>
+    <span class="n">id</span> <span class="n">string</span> <span class="k">PRIMARY</span> <span class="k">KEY</span><span class="p">,</span>
+    <span class="n">sender</span> <span class="n">string</span> <span class="k">PRIMARY</span> <span class="k">KEY</span><span class="p">,</span>
+    <span class="n">recipient</span> <span class="n">string</span><span class="p">,</span>
+    <span class="n">amount</span> <span class="k">double</span><span class="p">,</span>
+    <span class="n">state</span> <span class="n">string</span><span class="p">,</span>
+    <span class="s-Name">&quot;timestamp&quot;</span> <span class="nb">timestamp</span>
+<span class="p">)</span> <span class="n">CLUSTERED</span> <span class="k">BY</span> <span class="p">(</span><span class="n">sender</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="code psql highlight-psql"><div class="highlight"><pre><span class="c1">-- SQL dialect: Crate Data 0.38.7</span>
+<span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">user_transactions</span> <span class="p">(</span>
+    <span class="n">id</span> <span class="n">string</span><span class="p">,</span>
+    <span class="n">user_id</span> <span class="n">string</span> <span class="k">PRIMARY</span> <span class="k">KEY</span><span class="p">,</span>
+    <span class="n">transaction_id</span> <span class="n">string</span> <span class="k">PRIMARY</span> <span class="k">KEY</span><span class="p">,</span>
+    <span class="n">amount</span> <span class="k">double</span> <span class="k">PRIMARY</span> <span class="k">KEY</span><span class="p">,</span>
+    <span class="s-Name">&quot;timestamp&quot;</span> <span class="nb">timestamp</span><span class="p">,</span>
+    <span class="n">state</span> <span class="n">string</span>
+<span class="p">)</span> <span class="n">PARTITIONED</span> <span class="k">BY</span> <span class="p">(</span><span class="n">user_id</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="two-phase-commit-protocol">
+<h3>Two-Phase Commit Protocol<a class="headerlink" href="#two-phase-commit-protocol" title="Permalink to this headline">¶</a></h3>
+<p>The 2PC used in this work differs from a usual 2PC. Usually, a 2PC
+comprises a coordinator and many client nodes (i.e. cohorts). The
+coordinator initiates the protocol and decides whether to commit or abort a
+transaction. In the first phase (also called &#8220;commit request phase&#8221; or
+&#8220;voting phase&#8221;) the coordinator sends a &#8220;query to commit&#8221; message to all
+clients. All clients execute the transaction locally up to the point where
+they will be asked to commit. All clients reply with a &#8220;voting&#8221; message
+(which can be either &#8220;success&#8221; or &#8220;abort&#8221;). The coordinator decides whether
+to proceed by committing or aborting the transaction. If one cohort replies
+with abort, the transaction will be aborted. If all clients agree (i.e. all
+reply with success), the transaction will be committed <a class="reference external" href="http://en.wikipedia.org/wiki/Two-phase_commit_protocol#Common_architecture">[Wik14]</a> .</p>
+<p>The 2PC used in this work differs in two major parts. An application node
+is not connected with any other application node. An application node
+communicates with the Crate Data cluster (and the load balancer) only. A
+newly issued transaction by a user is redirected by the proxy to one
+application only (an issued transaction is never handled by many multiple
+application nodes at the same time). Therefore, an application node serves
+as coordinator, and the Crate Data cluster is its client (i.e. cohort).
+Several steps using SQL queries are performed to transfer the transaction
+amount from one user balance to another user balance. The result of a SQL
+query is equivalent to the &#8220;voting&#8221; message. A success or failure of a step
+is considered to be a success or abort message, respectively.</p>
+<p>The second major difference is the handling of abort messages. In the case
+that the Crate Data cluster returns an error (i.e. abort message), the
+transaction is left as it is. It will not be cleaned up immediately, but
+will be repaired by a later process. This can be done,
+because each record involved in a transaction has a state indicating if the
+particular record is allowed to be used in any further operations (i.e.
+calculating a user its balance).</p>
+</div>
+<div class="section" id="definition-of-a-user-transaction">
+<h3>Definition of a User Transaction<a class="headerlink" href="#definition-of-a-user-transaction" title="Permalink to this headline">¶</a></h3>
+<p>A transaction is split into four states; &#8220;initial&#8221;, &#8220;in progress&#8221;,
+&#8220;committed&#8221;, and &#8220;finished&#8221;. Each state of a transaction is transitioned by
+one ore more steps which are performed using a 2PC protocol. The states can
+be furthermore described as follows:</p>
+<ol class="arabic simple">
+<li>State &#8220;initial&#8221; indicates that a transaction has successfully been
+issued by a user, and is guaranteed to eventually be finished or dropped.</li>
+<li>State &#8220;in progress&#8221; indicates that a transaction is being processed.</li>
+<li>State &#8220;committed&#8221; indicates that the balance has been updated on both, the
+sender and recipients its account.</li>
+<li>State finished indicates that a transaction is finished and the updated
+balance of both participants can safely be used.</li>
+</ol>
+<p>Once a transaction is issued, it is considered as finished if, and only if,
+the transaction its state is marked as finished.</p>
+</div>
 </div>
 <div class="section" id="transfer-balance-from-one-user-to-another">
 <h2>Transfer balance from one user to another<a class="headerlink" href="#transfer-balance-from-one-user-to-another" title="Permalink to this headline">¶</a></h2>
-<p>Assume there are the two users &#8216;elon_musk&#8217; and &#8216;nikola_tesla&#8217;. Every user
-has a unique <tt class="docutils literal"><span class="pre">id</span></tt>. In the application, the id of a user is the <a class="reference external" href="http://en.wikipedia.org/wiki/SHA-1">SHA-1</a>
-value of the users&#8217; nickname. In the following examples, simple numbers are
-used to illustrate the different steps. Any other id, such as the one used
-for identifying a transaction, is a <a class="reference external" href="http://en.wikipedia.org/wiki/Universally_unique_identifier">UUID</a>.</p>
+<p>Assume there are two users, &#8216;elon_musk&#8217; and &#8216;nikola_tesla&#8217;. The user
+&#8216;elon_musk&#8217; wants to transfer 1000 of his balance to &#8216;nikola_tesla&#8217;. Each
+user has a unique id, which for the sake of simplicity in this example is a
+simplified number. In the prototype the id is the <a class="reference external" href="http://en.wikipedia.org/wiki/SHA-1">SHA-1</a> sum of the
+nickname, but any other method to generate a user id which sufficiently
+guarantees uniqueness can be used.</p>
 <table border="1" class="docutils">
 <colgroup>
 <col width="33%" />
@@ -147,9 +249,9 @@ for identifying a transaction, is a <a class="reference external" href="http://e
 </div>
 <div class="section" id="the-different-states-of-a-transaction">
 <h2>The different states of a transaction<a class="headerlink" href="#the-different-states-of-a-transaction" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="step">
-<span id="transactions-steps-step1"></span><h3>1. step<a class="headerlink" href="#step" title="Permalink to this headline">¶</a></h3>
-<p>The user &#8216;elon_musk&#8217; wants to transfer 1338 of his balance to
+<div class="section" id="state-initial">
+<span id="transactions-state-initial"></span><h3>State: Initial<a class="headerlink" href="#state-initial" title="Permalink to this headline">¶</a></h3>
+<p>The user &#8216;elon_musk&#8217; wants to transfer 1000 of his balance to
 &#8216;nikola_tesla&#8217;.</p>
 <table border="1" class="docutils">
 <colgroup>
@@ -175,7 +277,7 @@ for identifying a transaction, is a <a class="reference external" href="http://e
 <tr class="row-odd"><td>47</td>
 <td>10</td>
 <td>11</td>
-<td>1338</td>
+<td>1000</td>
 <td>&#8220;initial&#8221;</td>
 <td>...</td>
 </tr>
@@ -190,8 +292,8 @@ eventually.</p>
 updated nor is it used by any other operation.</p>
 </div>
 </div>
-<div class="section" id="transactions-steps-step2">
-<span id="id1"></span><h3>2. step<a class="headerlink" href="#transactions-steps-step2" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="state-in-progress">
+<span id="transactions-state-inprogress"></span><h3>State: In Progress<a class="headerlink" href="#state-in-progress" title="Permalink to this headline">¶</a></h3>
 <p>The second phase of the 2PC starts. The transaction is marked as &#8220;in progress&#8221;.</p>
 <table border="1" class="docutils">
 <colgroup>
@@ -217,15 +319,12 @@ updated nor is it used by any other operation.</p>
 <tr class="row-odd"><td>47</td>
 <td>10</td>
 <td>11</td>
-<td>1338</td>
+<td>1000</td>
 <td><cite>&#8220;in progress&#8221;</cite></td>
 <td>...</td>
 </tr>
 </tbody>
 </table>
-</div>
-<div class="section" id="transactions-steps-step3">
-<span id="id2"></span><h3>3. step<a class="headerlink" href="#transactions-steps-step3" title="Permalink to this headline">¶</a></h3>
 <p>After the transaction is marked as &#8220;in progress&#8221;, the amount can be
 transferred from one user to another. Using the &#8216;append only&#8217;-technique,
 adding or removing balance from a user account is done by inserting a
@@ -257,14 +356,14 @@ for the sender and recipient respectively. Both records are marked as
 <tr class="row-odd"><td>1338</td>
 <td>1</td>
 <td>47</td>
-<td>-1338</td>
+<td>-1000</td>
 <td>...</td>
 <td>&#8220;pending&#8221;</td>
 </tr>
 <tr class="row-even"><td>4711</td>
 <td>2</td>
 <td>47</td>
-<td>1338</td>
+<td>1000</td>
 <td>...</td>
 <td>&#8220;pending&#8221;</td>
 </tr>
@@ -277,13 +376,13 @@ for the sender and recipient respectively. Both records are marked as
 </div>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">As already noted in <a class="reference internal" href="#transactions-steps-step1"><em>1. step</em></a>, the <tt class="docutils literal"><span class="pre">timestamp</span></tt>
+<p class="last">As already noted in <a class="reference internal" href="#transactions-state-initial"><em>State: Initial</em></a>, the <tt class="docutils literal"><span class="pre">timestamp</span></tt>
 is  merely for documentation purposes. It does not get updated nor is
 it used by any other operation.</p>
 </div>
 </div>
-<div class="section" id="transactions-steps-step4">
-<span id="id3"></span><h3>4. step<a class="headerlink" href="#transactions-steps-step4" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="state-committed">
+<span id="transactions-state-committed"></span><h3>State: Committed<a class="headerlink" href="#state-committed" title="Permalink to this headline">¶</a></h3>
 <p>The transaction can now be marked as &#8220;committed&#8221;.</p>
 <table border="1" class="docutils">
 <colgroup>
@@ -309,7 +408,7 @@ it used by any other operation.</p>
 <tr class="row-odd"><td>47</td>
 <td>10</td>
 <td>11</td>
-<td>1338</td>
+<td>1000</td>
 <td><cite>&#8220;committed&#8221;</cite></td>
 <td>...</td>
 </tr>
@@ -325,10 +424,7 @@ check if the <tt class="docutils literal"><span class="pre">user_transactions</s
 additional SQL queries for each transaction. The process can simply
 continue with step 5.</p>
 </div>
-</div>
-<div class="section" id="transactions-steps-step5">
-<span id="id4"></span><h3>5. step<a class="headerlink" href="#transactions-steps-step5" title="Permalink to this headline">¶</a></h3>
-<p>The records in <tt class="docutils literal"><span class="pre">user_transactions</span></tt> can now be marked as &#8220;finished&#8221;.</p>
+<p id="transactions-steps-step5">The records in <tt class="docutils literal"><span class="pre">user_transactions</span></tt> can now be marked as &#8220;finished&#8221;.</p>
 <table border="1" class="docutils">
 <colgroup>
 <col width="9%" />
@@ -353,14 +449,14 @@ continue with step 5.</p>
 <tr class="row-odd"><td>1338</td>
 <td>10</td>
 <td>47</td>
-<td>-1338</td>
+<td>-1000</td>
 <td>...</td>
 <td><cite>&#8220;finished&#8221;</cite></td>
 </tr>
 <tr class="row-even"><td>4711</td>
 <td>11</td>
 <td>47</td>
-<td>1338</td>
+<td>1000</td>
 <td>...</td>
 <td><cite>&#8220;finished&#8221;</cite></td>
 </tr>
@@ -368,12 +464,12 @@ continue with step 5.</p>
 </table>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">Similar as noted in <a class="reference internal" href="#transactions-steps-step3"><em>3. step</em></a>, each record is
+<p class="last">Similar as noted in <a class="reference internal" href="#transactions-state-inprogress"><em>State: In Progress</em></a>, each record is
 update by a single operation.</p>
 </div>
 </div>
-<div class="section" id="transactions-steps-step6">
-<span id="id5"></span><h3>6. step<a class="headerlink" href="#transactions-steps-step6" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="state-finished">
+<span id="transactions-state-finished"></span><h3>State: Finished<a class="headerlink" href="#state-finished" title="Permalink to this headline">¶</a></h3>
 <p>The final step updates the transaction once again marking it as &#8220;finished&#8221;.</p>
 <table border="1" class="docutils">
 <colgroup>
@@ -399,12 +495,35 @@ update by a single operation.</p>
 <tr class="row-odd"><td>47</td>
 <td>10</td>
 <td>11</td>
-<td>1338</td>
+<td>1000</td>
 <td><cite>&#8220;finished&#8221;</cite></td>
 <td>...</td>
 </tr>
 </tbody>
 </table>
+</div>
+<div class="section" id="sequence-diagram">
+<h3>Sequence Diagram<a class="headerlink" href="#sequence-diagram" title="Permalink to this headline">¶</a></h3>
+<p>The following figure illustrates all previously described &#8220;states&#8221; required
+to process a successful transaction. A client issues a new transaction by
+sending a request. For the sake of simplicity, some parts are neglected.
+That is, the load balancer - the request is handled by an application node
+directly - and the initial checks if both users exist and the sender has a
+sufficiently high enough balance.</p>
+<a class="reference internal image-reference" href="_images/sequence-diagram.png"><img alt="Sequence diagram illustrating all major steps taken to process a transaction." class="align-center" src="_images/sequence-diagram.png" style="width: 500px; height: 500px;" /></a>
+</div>
+</div>
+<div class="section" id="calculating-the-current-user-balance">
+<h2>Calculating the Current User Balance<a class="headerlink" href="#calculating-the-current-user-balance" title="Permalink to this headline">¶</a></h2>
+<div class="code psql highlight-psql"><div class="highlight"><pre><span class="c1">-- SQL dialect: PostgreSQL 9.3, because Crate Data does not support JOIN</span>
+<span class="k">SELECT</span> <span class="n">sum</span><span class="p">(</span><span class="n">ut</span><span class="mf">.</span><span class="n">amount</span><span class="p">)</span>
+<span class="k">FROM</span> <span class="n">user_transcation</span> <span class="k">AS</span> <span class="n">ut</span>
+<span class="k">JOIN</span> <span class="n">transactions</span> <span class="k">AS</span> <span class="n">t</span>
+<span class="k">ON</span> <span class="n">t</span><span class="mf">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">ut</span><span class="mf">.</span><span class="n">transaction_id</span>
+<span class="k">WHERE</span> <span class="n">t</span><span class="mf">.</span><span class="n">state</span> <span class="o">=</span> <span class="s1">&#39;finished&#39;</span>
+<span class="k">AND</span> <span class="n">ut</span><span class="mf">.</span><span class="n">state</span> <span class="o">=</span> <span class="s1">&#39;finished&#39;</span>
+<span class="k">AND</span> <span class="n">ut</span><span class="mf">.</span><span class="n">user_id</span> <span class="o">=</span> <span class="s1">&#39;11&#39;</span>       <span class="c1">-- or any other user_id</span>
+</pre></div>
 </div>
 </div>
 </div>

@@ -7,7 +7,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>TiMPE - Transactions in Massively Parallel Environments &mdash; Validate your idea 0.1.0 documentation</title>
+  <title>TiMPE - Transactions in Massively Parallel Environments &mdash; TiMPE 0.1.0 documentation</title>
   
 
   
@@ -28,7 +28,7 @@
   
 
   
-    <link rel="top" title="Validate your idea 0.1.0 documentation" href="#"/>
+    <link rel="top" title="TiMPE 0.1.0 documentation" href="#"/>
         <link rel="next" title="Application setup" href="setup.html"/> 
 
   
@@ -43,7 +43,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-nav-search">
-        <a href="#" class="fa fa-home"> Validate your idea</a>
+        <a href="#" class="fa fa-home"> TiMPE</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -58,10 +58,11 @@
         
             <ul>
 <li class="toctree-l1"><a class="reference internal" href="setup.html">Application setup</a></li>
-<li class="toctree-l1"><a class="reference internal" href="transactions.html">Transaction system</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="transactions.html#the-theory-behind">The theory behind</a></li>
+<li class="toctree-l1"><a class="reference internal" href="transactions.html">Transaction System</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="transactions.html#the-theory-behind">The Theory Behind</a></li>
 <li class="toctree-l2"><a class="reference internal" href="transactions.html#transfer-balance-from-one-user-to-another">Transfer balance from one user to another</a></li>
 <li class="toctree-l2"><a class="reference internal" href="transactions.html#the-different-states-of-a-transaction">The different states of a transaction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="transactions.html#calculating-the-current-user-balance">Calculating the Current User Balance</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="u2u_transactions.html">TiMPE - User to User (u2u) transactions</a><ul>
@@ -83,7 +84,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="#">Validate your idea</a>
+        <a href="#">TiMPE</a>
       </nav>
 
 
@@ -122,18 +123,24 @@ being made.&#8221; Lukas Ender, May 2014 <a class="reference external" href="htt
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="setup.html">Application setup</a></li>
-<li class="toctree-l1"><a class="reference internal" href="transactions.html">Transaction system</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="transactions.html#the-theory-behind">The theory behind</a></li>
-<li class="toctree-l2"><a class="reference internal" href="transactions.html#transfer-balance-from-one-user-to-another">Transfer balance from one user to another</a></li>
-<li class="toctree-l2"><a class="reference internal" href="transactions.html#the-different-states-of-a-transaction">The different states of a transaction</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="transactions.html#step">1. step</a></li>
-<li class="toctree-l3"><a class="reference internal" href="transactions.html#transactions-steps-step2">2. step</a></li>
-<li class="toctree-l3"><a class="reference internal" href="transactions.html#transactions-steps-step3">3. step</a></li>
-<li class="toctree-l3"><a class="reference internal" href="transactions.html#transactions-steps-step4">4. step</a></li>
-<li class="toctree-l3"><a class="reference internal" href="transactions.html#transactions-steps-step5">5. step</a></li>
-<li class="toctree-l3"><a class="reference internal" href="transactions.html#transactions-steps-step6">6. step</a></li>
+<li class="toctree-l1"><a class="reference internal" href="transactions.html">Transaction System</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="transactions.html#the-theory-behind">The Theory Behind</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="transactions.html#append-only">Append-Only</a></li>
+<li class="toctree-l3"><a class="reference internal" href="transactions.html#data-model">Data model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="transactions.html#two-phase-commit-protocol">Two-Phase Commit Protocol</a></li>
+<li class="toctree-l3"><a class="reference internal" href="transactions.html#definition-of-a-user-transaction">Definition of a User Transaction</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="transactions.html#transfer-balance-from-one-user-to-another">Transfer balance from one user to another</a></li>
+<li class="toctree-l2"><a class="reference internal" href="transactions.html#the-different-states-of-a-transaction">The different states of a transaction</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="transactions.html#state-initial">State: Initial</a></li>
+<li class="toctree-l3"><a class="reference internal" href="transactions.html#state-in-progress">State: In Progress</a></li>
+<li class="toctree-l3"><a class="reference internal" href="transactions.html#state-committed">State: Committed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="transactions.html#state-finished">State: Finished</a></li>
+<li class="toctree-l3"><a class="reference internal" href="transactions.html#sequence-diagram">Sequence Diagram</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="transactions.html#calculating-the-current-user-balance">Calculating the Current User Balance</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="u2u_transactions.html">TiMPE - User to User (u2u) transactions</a><ul>
@@ -156,9 +163,6 @@ being made.&#8221; Lukas Ender, May 2014 <a class="reference external" href="htt
 <a class="reference internal image-reference" href="_images/u2u.png"><img alt="run the test script: 200 transactions with 100 concurrent threads." class="align-center" src="_images/u2u.png" style="width: 500px; height: 500px;" /></a>
 <p>Calculate the user balance with <tt class="docutils literal"><span class="pre">./bin/crash</span></tt>:</p>
 <a class="reference internal image-reference" href="_images/select-user-balance.png"><img alt="Calculation of all user balances" class="align-center" src="_images/select-user-balance.png" style="width: 500px; height: 500px;" /></a>
-<p>Helpful statements:</p>
-<p><tt class="docutils literal"><span class="pre">SELECT</span> <span class="pre">*</span> <span class="pre">FROM</span> <span class="pre">users</span></tt></p>
-<p><tt class="docutils literal"><span class="pre">'SELECT</span> <span class="pre">user_id,</span> <span class="pre">sum(amount)</span> <span class="pre">FROM</span> <span class="pre">user_transactions</span> <span class="pre">GROUP</span> <span class="pre">BY</span> <span class="pre">user_id'</span></tt></p>
 </div>
 </div>
 

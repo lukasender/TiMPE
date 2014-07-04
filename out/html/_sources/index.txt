@@ -40,12 +40,6 @@ Calculate the user balance with ``./bin/crash``:
     :alt: Calculation of all user balances
     :align: center
 
-Helpful statements:
-
-``SELECT * FROM users``
-
-``'SELECT user_id, sum(amount) FROM user_transactions GROUP BY user_id'``
-
 .. _`Validate Your Idea`: https://github.com/lumannnn/vyi
 
 .. _`VYI`: https://github.com/lumannnn/vyi/docs

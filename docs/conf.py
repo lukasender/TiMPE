@@ -2,7 +2,7 @@
 import re
 import sphinx_rtd_theme
 
-project = u'Validate your idea'
+project = u'TiMPE'
 copyright = u'2014, Lukas Ender'
 
 master_doc = 'index'

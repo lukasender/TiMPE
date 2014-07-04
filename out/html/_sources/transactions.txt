@@ -1,24 +1,140 @@
-Transaction system
+Transaction System
 ==================
 
-The theory behind
+This prototype safely processes a user transaction in a shared nothing
+environment, where no centralised transaction manager is required. This is
+achieved by the append-only technique in combination with a suitable data
+model and a two-phase commit protocol. Once a transaction is persisted in
+the transactions table, it can always be repaired.
+
+The Theory Behind
 -----------------
 
-The transaction system relies on a two phase commit (2PC) implementation
-and a carefully chosen data model.
+Append-Only
+...........
 
-The first phase accepts the transaction and stores it in the table
-``transactions`` as a preparation for the second phase. The second phase is
-a sequence of operations, as described in the following section.
+The "append-only" technique does not perform in-place updates, but adds
+new data only. For instance, take a counter which gets incremented by
+several concurrent clients.
+
+Each increment operation can be represented by one record. As Bailis and
+Ghodsi described in their work "Eventual Consistency Today: Limitations,
+Extensions, and Beyond"`[BG13]`_, one could use a list of some sort and add
+(append) an element to that list for every counter increment. "[...] the
+current counter status is represented as the count of distinct increment
+invocations, similar to how counting is introduced at the grade-school
+level: by making a tally mark for every increment then summing the total."
+
+Using Crate Data, or any database which has tables for that matter, one can
+simply INSERT a value for every counter increment. Depending on the
+increment operation, the value can be any arbitrary number. Summing all
+stored values in that table yields the total number of increments. Using
+SQL, this can be done by performing a SELECT with the SUM() aggregation.
+
+Data model
+..........
+
+.. highlight:: psql
+.. code:: psql
+
+    -- SQL dialect: Crate Data 0.38.7
+    CREATE TABLE users (
+        id string PRIMARY KEY,
+        nickname string PRIMARY KEY
+    );
+
+.. highlight:: psql
+.. code:: psql
+
+    -- SQL dialect: Crate Data 0.38.7
+    CREATE TABLE transactions (
+        id string PRIMARY KEY,
+        sender string PRIMARY KEY,
+        recipient string,
+        amount double,
+        state string,
+        "timestamp" timestamp
+    ) CLUSTERED BY (sender);
+
+.. highlight:: psql
+.. code:: psql
+
+    -- SQL dialect: Crate Data 0.38.7
+    CREATE TABLE user_transactions (
+        id string,
+        user_id string PRIMARY KEY,
+        transaction_id string PRIMARY KEY,
+        amount double PRIMARY KEY,
+        "timestamp" timestamp,
+        state string
+    ) PARTITIONED BY (user_id);
+
+
+Two-Phase Commit Protocol
+.........................
+
+The 2PC used in this work differs from a usual 2PC. Usually, a 2PC
+comprises a coordinator and many client nodes (i.e. cohorts). The
+coordinator initiates the protocol and decides whether to commit or abort a
+transaction. In the first phase (also called "commit request phase" or
+"voting phase") the coordinator sends a "query to commit" message to all
+clients. All clients execute the transaction locally up to the point where
+they will be asked to commit. All clients reply with a "voting" message
+(which can be either "success" or "abort"). The coordinator decides whether
+to proceed by committing or aborting the transaction. If one cohort replies
+with abort, the transaction will be aborted. If all clients agree (i.e. all
+reply with success), the transaction will be committed `[Wik14]`_ .
+
+The 2PC used in this work differs in two major parts. An application node
+is not connected with any other application node. An application node
+communicates with the Crate Data cluster (and the load balancer) only. A
+newly issued transaction by a user is redirected by the proxy to one
+application only (an issued transaction is never handled by many multiple
+application nodes at the same time). Therefore, an application node serves
+as coordinator, and the Crate Data cluster is its client (i.e. cohort).
+Several steps using SQL queries are performed to transfer the transaction
+amount from one user balance to another user balance. The result of a SQL
+query is equivalent to the "voting" message. A success or failure of a step
+is considered to be a success or abort message, respectively.
+
+The second major difference is the handling of abort messages. In the case
+that the Crate Data cluster returns an error (i.e. abort message), the
+transaction is left as it is. It will not be cleaned up immediately, but
+will be repaired by a later process. This can be done,
+because each record involved in a transaction has a state indicating if the
+particular record is allowed to be used in any further operations (i.e.
+calculating a user its balance).
+
+
+Definition of a User Transaction
+................................
+
+A transaction is split into four states; "initial", "in progress",
+"committed", and "finished". Each state of a transaction is transitioned by
+one ore more steps which are performed using a 2PC protocol. The states can
+be furthermore described as follows:
+
+1. State "initial" indicates that a transaction has successfully been
+   issued by a user, and is guaranteed to eventually be finished or dropped.
+2. State "in progress" indicates that a transaction is being processed.
+3. State "committed" indicates that the balance has been updated on both, the
+   sender and recipients its account.
+4. State finished indicates that a transaction is finished and the updated
+   balance of both participants can safely be used.
+
+Once a transaction is issued, it is considered as finished if, and only if,
+the transaction its state is marked as finished.
+
 
 Transfer balance from one user to another
 -----------------------------------------
 
-Assume there are the two users 'elon_musk' and 'nikola_tesla'. Every user
-has a unique ``id``. In the application, the id of a user is the `SHA-1`_
-value of the users' nickname. In the following examples, simple numbers are
-used to illustrate the different steps. Any other id, such as the one used
-for identifying a transaction, is a `UUID`_.
+Assume there are two users, 'elon_musk' and 'nikola_tesla'. The user
+'elon_musk' wants to transfer 1000 of his balance to 'nikola_tesla'. Each
+user has a unique id, which for the sake of simplicity in this example is a
+simplified number. In the prototype the id is the `SHA-1`_ sum of the
+nickname, but any other method to generate a user id which sufficiently
+guarantees uniqueness can be used.
 
 +----------------------+
 | users                |
@@ -33,12 +149,12 @@ for identifying a transaction, is a `UUID`_.
 The different states of a transaction
 -------------------------------------
 
-.. _transactions_steps_step1:
+.. _transactions_state_initial:
 
-1. step
-.......
+State: Initial
+..............
 
-The user 'elon_musk' wants to transfer 1338 of his balance to
+The user 'elon_musk' wants to transfer 1000 of his balance to
 'nikola_tesla'.
 
 +----------------------------------------------------------+
@@ -46,7 +162,7 @@ The user 'elon_musk' wants to transfer 1338 of his balance to
 +----+--------+-----------+--------+-----------+-----------+
 | id | sender | recipient | amount | state     | timestamp |
 +====+========+===========+========+===========+===========+
-| 47 | 10     | 11        | 1338   | "initial" | ...       |
+| 47 | 10     | 11        | 1000   | "initial" | ...       |
 +----+--------+-----------+--------+-----------+-----------+
 
 The transaction is recorded in the system. The first phase of the 2PC is
@@ -58,10 +174,10 @@ eventually.
     The ``timestamp`` is merely for documentation purposes. It does not get
     updated nor is it used by any other operation.
 
-.. _transactions_steps_step2:
+.. _transactions_state_inprogress:
 
-2. step
-.......
+State: In Progress
+..................
 
 The second phase of the 2PC starts. The transaction is marked as "in progress".
 
@@ -70,13 +186,8 @@ The second phase of the 2PC starts. The transaction is marked as "in progress".
 +----+--------+-----------+--------+-----------------+-----------+
 | id | sender | recipient | amount | state           | timestamp |
 +====+========+===========+========+=================+===========+
-| 47 | 10     | 11        | 1338   | `"in progress"` | ...       |
+| 47 | 10     | 11        | 1000   | `"in progress"` | ...       |
 +----+--------+-----------+--------+-----------------+-----------+
-
-.. _transactions_steps_step3:
-
-3. step
-........
 
 After the transaction is marked as "in progress", the amount can be
 transferred from one user to another. Using the 'append only'-technique,
@@ -92,9 +203,9 @@ for the sender and recipient respectively. Both records are marked as
 +------+---------+----------------+--------+-----------+-----------+
 | id   | user_id | transaction_id | amount | timestamp | state     |
 +======+=========+================+========+===========+===========+
-| 1338 | 1       | 47             | -1338  | ...       | "pending" |
+| 1338 | 1       | 47             | -1000  | ...       | "pending" |
 +------+---------+----------------+--------+-----------+-----------+
-| 4711 | 2       | 47             | 1338   | ...       | "pending" |
+| 4711 | 2       | 47             | 1000   | ...       | "pending" |
 +------+---------+----------------+--------+-----------+-----------+
 
 .. note::
@@ -104,14 +215,14 @@ for the sender and recipient respectively. Both records are marked as
 
 .. note::
 
-    As already noted in :ref:`transactions_steps_step1`, the ``timestamp``
+    As already noted in :ref:`transactions_state_initial`, the ``timestamp``
     is  merely for documentation purposes. It does not get updated nor is
     it used by any other operation.
 
-.. _transactions_steps_step4:
+.. _transactions_state_committed:
 
-4. step
-.......
+State: Committed
+................
 
 The transaction can now be marked as "committed".
 
@@ -120,7 +231,7 @@ The transaction can now be marked as "committed".
 +----+--------+-----------+--------+---------------+-----------+
 | id | sender | recipient | amount | state         | timestamp |
 +====+========+===========+========+===============+===========+
-| 47 | 10     | 11        | 1338   | `"committed"` | ...       |
+| 47 | 10     | 11        | 1000   | `"committed"` | ...       |
 +----+--------+-----------+--------+---------------+-----------+
 
 .. note::
@@ -135,9 +246,6 @@ The transaction can now be marked as "committed".
 
 .. _transactions_steps_step5:
 
-5. step
-.......
-
 The records in ``user_transactions`` can now be marked as "finished".
 
 +---------------------------------------------------------------------+
@@ -145,20 +253,20 @@ The records in ``user_transactions`` can now be marked as "finished".
 +------+---------+----------------+--------+-----------+--------------+
 | id   | user_id | transaction_id | amount | timestamp | state        |
 +======+=========+================+========+===========+==============+
-| 1338 | 10      | 47             | -1338  | ...       | `"finished"` |
+| 1338 | 10      | 47             | -1000  | ...       | `"finished"` |
 +------+---------+----------------+--------+-----------+--------------+
-| 4711 | 11      | 47             | 1338   | ...       | `"finished"` |
+| 4711 | 11      | 47             | 1000   | ...       | `"finished"` |
 +------+---------+----------------+--------+-----------+--------------+
 
 .. note::
 
-    Similar as noted in :ref:`transactions_steps_step3`, each record is
+    Similar as noted in :ref:`transactions_state_inprogress`, each record is
     update by a single operation.
 
-.. _transactions_steps_step6:
+.. _transactions_state_finished:
 
-6. step
-.......
+State: Finished
+...............
 
 The final step updates the transaction once again marking it as "finished".
 
@@ -167,9 +275,46 @@ The final step updates the transaction once again marking it as "finished".
 +----+--------+-----------+--------+--------------+-----------+
 | id | sender | recipient | amount | state        | timestamp |
 +====+========+===========+========+==============+===========+
-| 47 | 10     | 11        | 1338   | `"finished"` | ...       |
+| 47 | 10     | 11        | 1000   | `"finished"` | ...       |
 +----+--------+-----------+--------+--------------+-----------+
 
+Sequence Diagram
+................
+
+The following figure illustrates all previously described "states" required
+to process a successful transaction. A client issues a new transaction by
+sending a request. For the sake of simplicity, some parts are neglected.
+That is, the load balancer - the request is handled by an application node
+directly - and the initial checks if both users exist and the sender has a
+sufficiently high enough balance.
+
+.. image:: images/sequence-diagram.png
+    :width: 500px
+    :height: 500px
+    :alt: Sequence diagram illustrating all major steps taken to process a transaction.
+    :align: center
+
+
+Calculating the Current User Balance
+------------------------------------
+
+.. highlight:: psql
+.. code:: psql
+
+    -- SQL dialect: PostgreSQL 9.3, because Crate Data does not support JOIN
+    SELECT sum(ut.amount)
+    FROM user_transcation AS ut
+    JOIN transactions AS t
+    ON t.id = ut.transaction_id
+    WHERE t.state = 'finished'
+    AND ut.state = 'finished'
+    AND ut.user_id = '11'       -- or any other user_id
+
+
+
+.. _`[BG13]`: http://doi.acm.org/10.1145/2460276.2462076
+
+.. _`[Wik14]`: http://en.wikipedia.org/wiki/Two-phase_commit_protocol#Common_architecture
 
 .. _`SHA-1`: http://en.wikipedia.org/wiki/SHA-1
 
