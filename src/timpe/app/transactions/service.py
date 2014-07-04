@@ -211,12 +211,11 @@ class TransactionsService(object):
                                                occ_safe=True)
 
     def _process_critial_error(self, transaction):
-        """
-        Mother of god! A critical error occurred. Only a human can help now...
-        """
         # notify a human
-        raise ProcessError("Mother of god! A critical error occurred. "\
-                           "Only a human can help now...", transaction)
+        raise ProcessError("A critical error occurred. "\
+                           "A transaction with an undefined "\
+                           "state has been found",
+                           transaction)
 
     def _update_balance_sender(self, transaction, state):
         ta_id = transaction['id']
