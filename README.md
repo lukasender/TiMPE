@@ -137,7 +137,7 @@ To install, run the following scripts:
 
 followed by:
 
-    ./bin/buildout
+    ./bin/buildout -N
 
 In some cases, the Python library ``reqeusts`` does not get installed
 automatically. In such a case, install it manually via:
