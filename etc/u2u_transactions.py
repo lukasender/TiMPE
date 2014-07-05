@@ -62,6 +62,11 @@ def release_the_kraken(immediate, x_transactions, max_concurrent_transactions):
             updated_balance_recipient,
             updated_balance_recipient - initial_balance_recipient
         )
+
+        average = benchmark_calculate_user_balance(sender)
+        print ""
+        print "On average, calculating a user balance now takes {0} ms "\
+              "(including HTTP overhead)".format(average)
     except KeyboardInterrupt:
         sys.exit(1)
 
@@ -70,6 +75,16 @@ def get_users(filter_users):
     url_users = BASEURL + '/users'
     r = requests.get(url_users)
     return [user for user in r.json()['data']['users'] if user['nickname'] in filter_users]
+
+
+def benchmark_calculate_user_balance(user, x_times=10):
+    msecs = []
+    for _ in range(x_times):
+        url_user = BASEURL + '/users/{0}'.format(user['id'])
+        with Timer() as t:
+            requests.get(url_user)
+        msecs.append(t.msecs)
+    return sum(msecs) / x_times
 
 
 def start_daemons(max_concurrency, target, thread_args):

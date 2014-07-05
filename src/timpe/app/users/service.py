@@ -1,6 +1,7 @@
 from lovely.pyrest.rest import RestService, rpcmethod_route
 from lovely.pyrest.validation import validate
 from crate.client.exceptions import ProgrammingError
+from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
 from timpe.app.model import CRATE_CONNECTION, genid, genuuid
 
@@ -61,6 +62,30 @@ class UserService(object):
             })
         return {"data": {"users": result}}
 
+    @rpcmethod_route(route_suffix='/{user_id}')
+    def get_user(self, user_id):
+        cursor = self.cursor
+        user_stmt = "SELECT nickname FROM users WHERE id = ?"
+        user_ta_stmt = "SELECT transaction_id, amount FROM user_transactions "\
+                       "WHERE user_id = ? AND state = ?"
+        cursor.execute("REFRESH TABLE users")
+        cursor.execute("REFRESH TABLE user_transactions")
+        cursor.execute("REFRESH TABLE transactions")
+        try:
+            cursor.execute(user_stmt, (user_id,))
+            user = cursor.fetchone()
+            cursor.execute(user_ta_stmt, (user_id, u'finished',))
+            user_transactions = cursor.fetchall()
+            balance = self._calculate_balance(user_transactions)
+            result = {
+                "id": user_id,
+                "nickname": user[0],
+                "balance": balance
+            }
+            return {"data": {"user": result}}
+        except (NoResultFound, MultipleResultsFound):
+            return bad_request('No such user found')
+
     def _calculate_balance(self, user_transactions):
         cursor = self.cursor
         balance = 0
@@ -103,6 +128,15 @@ class UserService(object):
         cursor.execute("REFRESH TABLE users")
         cursor.execute("REFRESH TABLE user_transactions")
         return {"status": "success"}
+
+
+def bad_request(msg=None, request=None):
+    if request:
+        request.response.status = 400
+    br = {"status": "failed"}
+    if msg:
+        br['msg'] = msg
+    return br
 
 
 def includeme(config):
