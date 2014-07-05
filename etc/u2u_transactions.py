@@ -19,24 +19,57 @@ headers = {'content-type':'application/json'}
 
 def release_the_kraken(immediate, x_transactions, max_concurrent_transactions):
     try:
-        url_users = BASEURL + '/users'
-        r = requests.get(url_users)
-        users = [user for user in r.json()['data']['users']]
-
-        sender = users[0]
-        recipient = users[1]
+        sender, recipient = get_users(['elon_musk', 'nikola_tesla'])
+        initial_balance_sender = sender['balance']
+        initial_balance_recipient = recipient['balance']
 
         transactions_queue = Queue(max_concurrent_transactions * 2)
 
         args_transaction = (sender, recipient, immediate, transactions_queue)
         start_daemons(max_concurrent_transactions, transaction,
                       args_transaction)
-        start_task_and_wait(x_transactions, transactions_queue)
+        with Timer() as t:
+            start_task_and_wait(x_transactions, transactions_queue)
 
         excepted_balance = (pow(x_transactions, 2) + x_transactions) / 2
-        print "Done! Total balance transfered: {0}".format(excepted_balance)
+        print ""
+        print "Done! Total balance of {0} transferred in {1} ms".format(
+            excepted_balance,
+            t.msecs
+        )
+
+        sender, recipient = get_users(['elon_musk', 'nikola_tesla'])
+        updated_balance_sender = sender['balance']
+        updated_balance_recipient = recipient['balance']
+
+        print ""
+        print "Initial balance"
+        print "---------------"
+        print "{0} (sender): {1}".format(sender['nickname'],
+                                         initial_balance_sender)
+        print "{0} (recipient): {1}".format(recipient['nickname'],
+                                            initial_balance_recipient)
+        print ""
+        print "Updated balance"
+        print "---------------"
+        print "{0} (sender): {1}, difference to initial balance: {2}".format(
+            sender['nickname'],
+            updated_balance_sender,
+            updated_balance_sender - initial_balance_sender
+        )
+        print "{0} (recipient): {1}, difference to initial balance: {2}".format(
+            recipient['nickname'],
+            updated_balance_recipient,
+            updated_balance_recipient - initial_balance_recipient
+        )
     except KeyboardInterrupt:
         sys.exit(1)
+
+
+def get_users(filter_users):
+    url_users = BASEURL + '/users'
+    r = requests.get(url_users)
+    return [user for user in r.json()['data']['users'] if user['nickname'] in filter_users]
 
 
 def start_daemons(max_concurrency, target, thread_args):
