@@ -89,17 +89,26 @@ class UserService(object):
     def _calculate_balance(self, user_transactions):
         cursor = self.cursor
         balance = 0
+        # note: IN allows max. 1023 arguments only.
+        # workaround: 'scrolling'
         stmt = "SELECT id FROM transactions "\
                "WHERE id IN ({0})"
         ut_ids = [u[0] for u in user_transactions]
-        place_holders = ['?' for _ in xrange(len(ut_ids))]
-        stmt = stmt.format(', '.join(place_holders))
-        cursor.execute(stmt, ut_ids)
-        transactions = cursor.fetchall()
-        for user_id, amount in user_transactions:
-            if [user_id] in transactions or user_id == u'register':
+        ut_ids_chunks = self._chunks(ut_ids, 1024)
+        transactions = []
+        for ids in ut_ids_chunks:
+            place_holders = ['?' for _ in xrange(len(ids))]
+            selectStmt = stmt.format(', '.join(place_holders))
+            cursor.execute(selectStmt, ids)
+            transactions += cursor.fetchall()
+        for t_id, amount in user_transactions:
+            if [t_id] in transactions or t_id == u'register':
                 balance += amount
         return balance
+
+    def _chunks(self, l, n):
+        for i in xrange(0, len(l), n):
+            yield l[i:i+n]
 
     @rpcmethod_route(route_suffix="/register", request_method="POST")
     @validate(REGISTER_SCHEMA)
