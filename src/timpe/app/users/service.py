@@ -89,7 +89,7 @@ class UserService(object):
     def _calculate_balance(self, user_transactions):
         cursor = self.cursor
         balance = 0
-        # note: IN allows max. 1023 arguments only.
+        # note: IN allows max. 1024 arguments only.
         # workaround: 'scrolling'
         stmt = "SELECT id FROM transactions "\
                "WHERE id IN ({0})"
