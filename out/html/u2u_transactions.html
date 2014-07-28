@@ -7,7 +7,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>TiMPE - User to User (u2u) transactions &mdash; TiMPE 0.1.0 documentation</title>
+  <title>TiMPE - User to User (u2u) transactions &mdash; TiMPE 0.1.2 documentation</title>
   
 
   
@@ -28,7 +28,7 @@
   
 
   
-    <link rel="top" title="TiMPE 0.1.0 documentation" href="index.html"/>
+    <link rel="top" title="TiMPE 0.1.2 documentation" href="index.html"/>
         <link rel="prev" title="Transaction System" href="transactions.html"/> 
 
   
@@ -67,8 +67,8 @@
 </li>
 <li class="toctree-l1 current"><a class="current reference internal" href="">TiMPE - User to User (u2u) transactions</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#introduction">Introduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#first-phase-of-the-2pc">First phase of the 2PC</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#second-phase-of-the-2pc">Second phase of the 2PC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#first-phase-of-the-mpc">First phase of the MPC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#second-phase-of-the-mpc">Second phase of the MPC</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#test-edge-and-error-cases">Test edge and error cases</a></li>
 </ul>
 </li>
@@ -110,7 +110,7 @@
 <h1>TiMPE - User to User (u2u) transactions<a class="headerlink" href="#timpe-user-to-user-u2u-transactions" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="introduction">
 <h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
-<p>This test suite tests the  two-phase commit protocol implementation.</p>
+<p>This test suite tests the  multi-phase commit protocol implementation.</p>
 <p>The first phase accepts a new transaction from a user. The second phase
 transfers the amount from the sender to the recipient and takes care of
 data consistency.</p>
@@ -230,8 +230,8 @@ of a <tt class="docutils literal"><span class="pre">transaction</span></tt> or <
 </div>
 </div>
 </div>
-<div class="section" id="first-phase-of-the-2pc">
-<h2>First phase of the 2PC<a class="headerlink" href="#first-phase-of-the-2pc" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="first-phase-of-the-mpc">
+<h2>First phase of the MPC<a class="headerlink" href="#first-phase-of-the-mpc" title="Permalink to this headline">¶</a></h2>
 <p>Nikola wants to transfer some of his balance to Elon, resulting in new balances
 of 9900 for Nikola and 10100 for Elon Musk:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">transaction</span> <span class="o">=</span> <span class="p">{</span>
@@ -287,8 +287,8 @@ resulting in new balances of 9600 for Elon and 10500 for Jacque:</p>
 </pre></div>
 </div>
 </div>
-<div class="section" id="second-phase-of-the-2pc">
-<h2>Second phase of the 2PC<a class="headerlink" href="#second-phase-of-the-2pc" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="second-phase-of-the-mpc">
+<h2>Second phase of the MPC<a class="headerlink" href="#second-phase-of-the-mpc" title="Permalink to this headline">¶</a></h2>
 <p>Process all pending transactions:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">r</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s">&#39;/transactions/process&#39;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">r</span><span class="o">.</span><span class="n">json</span><span class="p">[</span><span class="s">&#39;status&#39;</span><span class="p">]</span>
@@ -339,10 +339,10 @@ resulting in new balances of 9600 for Elon and 10500 for Jacque:</p>
 </div>
 <div class="section" id="test-edge-and-error-cases">
 <h2>Test edge and error cases<a class="headerlink" href="#test-edge-and-error-cases" title="Permalink to this headline">¶</a></h2>
-<p>The following section illustrates the different steps of the sechond phase
-of the 2PC. It focuses on the error cases, and especially on resuming an
+<p>The following section illustrates the different steps of the second phase
+of the MPC. It focuses on the error cases, and especially on resuming an
 incomplete transaction.</p>
-<p>The general assumption is, that the first phase of the 2PC is successful.
+<p>The general assumption is, that the first phase of the MPC is successful.
 Therefore, the transaction is inserted manually into the <tt class="docutils literal"><span class="pre">transactions</span></tt>
 table. The next assumption is, that a transaction cannot be completed
 because of an error and a transaction must therefore be repaired at a later
@@ -809,7 +809,7 @@ and are marked as <tt class="docutils literal"><span class="pre">finished</span>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.1.0',
+            VERSION:'0.1.2',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

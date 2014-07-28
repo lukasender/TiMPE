@@ -7,7 +7,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>TiMPE - Transactions in Massively Parallel Environments &mdash; TiMPE 0.1.0 documentation</title>
+  <title>TiMPE - Transactions in Massively Parallel Environments &mdash; TiMPE 0.1.2 documentation</title>
   
 
   
@@ -28,7 +28,7 @@
   
 
   
-    <link rel="top" title="TiMPE 0.1.0 documentation" href="#"/>
+    <link rel="top" title="TiMPE 0.1.2 documentation" href="#"/>
         <link rel="next" title="Application setup" href="setup.html"/> 
 
   
@@ -67,8 +67,8 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="u2u_transactions.html">TiMPE - User to User (u2u) transactions</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="u2u_transactions.html#introduction">Introduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="u2u_transactions.html#first-phase-of-the-2pc">First phase of the 2PC</a></li>
-<li class="toctree-l2"><a class="reference internal" href="u2u_transactions.html#second-phase-of-the-2pc">Second phase of the 2PC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="u2u_transactions.html#first-phase-of-the-mpc">First phase of the MPC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="u2u_transactions.html#second-phase-of-the-mpc">Second phase of the MPC</a></li>
 <li class="toctree-l2"><a class="reference internal" href="u2u_transactions.html#test-edge-and-error-cases">Test edge and error cases</a></li>
 </ul>
 </li>
@@ -127,7 +127,7 @@ being made.&#8221; Lukas Ender, May 2014 <a class="reference external" href="htt
 <li class="toctree-l2"><a class="reference internal" href="transactions.html#the-theory-behind">The Theory Behind</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="transactions.html#append-only">Append-Only</a></li>
 <li class="toctree-l3"><a class="reference internal" href="transactions.html#data-model">Data model</a></li>
-<li class="toctree-l3"><a class="reference internal" href="transactions.html#two-phase-commit-protocol">Two-Phase Commit Protocol</a></li>
+<li class="toctree-l3"><a class="reference internal" href="transactions.html#multi-phase-commit-protocol">Multi-Phase Commit Protocol</a></li>
 <li class="toctree-l3"><a class="reference internal" href="transactions.html#definition-of-a-user-transaction">Definition of a User Transaction</a></li>
 </ul>
 </li>
@@ -148,8 +148,8 @@ being made.&#8221; Lukas Ender, May 2014 <a class="reference external" href="htt
 <li class="toctree-l3"><a class="reference internal" href="u2u_transactions.html#setup-of-the-suite">Setup of the suite</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="u2u_transactions.html#first-phase-of-the-2pc">First phase of the 2PC</a></li>
-<li class="toctree-l2"><a class="reference internal" href="u2u_transactions.html#second-phase-of-the-2pc">Second phase of the 2PC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="u2u_transactions.html#first-phase-of-the-mpc">First phase of the MPC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="u2u_transactions.html#second-phase-of-the-mpc">Second phase of the MPC</a></li>
 <li class="toctree-l2"><a class="reference internal" href="u2u_transactions.html#test-edge-and-error-cases">Test edge and error cases</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="u2u_transactions.html#resuming-from-in-progress">Resuming from <tt class="docutils literal"><span class="pre">in</span> <span class="pre">progress</span></tt></a></li>
 <li class="toctree-l3"><a class="reference internal" href="u2u_transactions.html#resuming-from-committed">Resuming from <tt class="docutils literal"><span class="pre">committed</span></tt></a></li>
@@ -202,7 +202,7 @@ being made.&#8221; Lukas Ender, May 2014 <a class="reference external" href="htt
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.1.0',
+            VERSION:'0.1.2',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

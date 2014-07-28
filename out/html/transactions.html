@@ -7,7 +7,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Transaction System &mdash; TiMPE 0.1.0 documentation</title>
+  <title>Transaction System &mdash; TiMPE 0.1.2 documentation</title>
   
 
   
@@ -28,7 +28,7 @@
   
 
   
-    <link rel="top" title="TiMPE 0.1.0 documentation" href="index.html"/>
+    <link rel="top" title="TiMPE 0.1.2 documentation" href="index.html"/>
         <link rel="next" title="TiMPE - User to User (u2u) transactions" href="u2u_transactions.html"/>
         <link rel="prev" title="Application setup" href="setup.html"/> 
 
@@ -68,8 +68,8 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="u2u_transactions.html">TiMPE - User to User (u2u) transactions</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="u2u_transactions.html#introduction">Introduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="u2u_transactions.html#first-phase-of-the-2pc">First phase of the 2PC</a></li>
-<li class="toctree-l2"><a class="reference internal" href="u2u_transactions.html#second-phase-of-the-2pc">Second phase of the 2PC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="u2u_transactions.html#first-phase-of-the-mpc">First phase of the MPC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="u2u_transactions.html#second-phase-of-the-mpc">Second phase of the MPC</a></li>
 <li class="toctree-l2"><a class="reference internal" href="u2u_transactions.html#test-edge-and-error-cases">Test edge and error cases</a></li>
 </ul>
 </li>
@@ -112,7 +112,7 @@
 <p>This prototype safely processes a user transaction in a shared nothing
 environment, where no centralised transaction manager is required. This is
 achieved by the append-only technique in combination with a suitable data
-model and a two-phase commit protocol. Once a transaction is persisted in
+model and a multi-phase commit protocol. Once a transaction is persisted in
 the transactions table, it can always be repaired.</p>
 <div class="section" id="the-theory-behind">
 <h2>The Theory Behind<a class="headerlink" href="#the-theory-behind" title="Permalink to this headline">¶</a></h2>
@@ -166,10 +166,10 @@ SQL, this can be done by performing a SELECT with the SUM() aggregation.</p>
 </pre></div>
 </div>
 </div>
-<div class="section" id="two-phase-commit-protocol">
-<h3>Two-Phase Commit Protocol<a class="headerlink" href="#two-phase-commit-protocol" title="Permalink to this headline">¶</a></h3>
-<p>The 2PC used in this work differs from a usual 2PC. Usually, a 2PC
-comprises a coordinator and many client nodes (i.e. cohorts). The
+<div class="section" id="multi-phase-commit-protocol">
+<h3>Multi-Phase Commit Protocol<a class="headerlink" href="#multi-phase-commit-protocol" title="Permalink to this headline">¶</a></h3>
+<p>The multi-phase commit protocol (MPC) used in this work is very similar to a
+usual 2PC. Usually, a 2PC comprises a coordinator and many client nodes (i.e. cohorts). The
 coordinator initiates the protocol and decides whether to commit or abort a
 transaction. In the first phase (also called &#8220;commit request phase&#8221; or
 &#8220;voting phase&#8221;) the coordinator sends a &#8220;query to commit&#8221; message to all
@@ -179,7 +179,7 @@ they will be asked to commit. All clients reply with a &#8220;voting&#8221; mess
 to proceed by committing or aborting the transaction. If one cohort replies
 with abort, the transaction will be aborted. If all clients agree (i.e. all
 reply with success), the transaction will be committed <a class="reference external" href="http://en.wikipedia.org/wiki/Two-phase_commit_protocol#Common_architecture">[Wik14]</a> .</p>
-<p>The 2PC used in this work differs in two major parts. An application node
+<p>The MPC used in this work differs in three major parts. An application node
 is not connected with any other application node. An application node
 communicates with the Crate Data cluster (and the load balancer) only. A
 newly issued transaction by a user is redirected by the proxy to one
@@ -197,12 +197,20 @@ will be repaired by a later process. This can be done,
 because each record involved in a transaction has a state indicating if the
 particular record is allowed to be used in any further operations (i.e.
 calculating a user its balance).</p>
+<p>The third major difference is the division of the phases. The MPC still
+consists of two phases, but while the first phase only guarantees that the
+issued transaction is recorded, the second phase does all the heavy work
+and performs all further steps which are necessary. The first phase is
+described through <a class="reference internal" href="#transactions-state-initial"><em>State: Initial</em></a>, the second phase is described through
+sections <a class="reference internal" href="#transactions-state-initial"><em>State: Initial</em></a>,
+<a class="reference internal" href="#transactions-state-inprogress"><em>State: In Progress</em></a>, <a class="reference internal" href="#transactions-state-committed"><em>State: Committed</em></a>,
+and <a class="reference internal" href="#transactions-state-finished"><em>State: Finished</em></a>.</p>
 </div>
 <div class="section" id="definition-of-a-user-transaction">
 <h3>Definition of a User Transaction<a class="headerlink" href="#definition-of-a-user-transaction" title="Permalink to this headline">¶</a></h3>
 <p>A transaction is split into four states; &#8220;initial&#8221;, &#8220;in progress&#8221;,
 &#8220;committed&#8221;, and &#8220;finished&#8221;. Each state of a transaction is transitioned by
-one ore more steps which are performed using a 2PC protocol. The states can
+one ore more steps which are performed using the MPC protocol. The states can
 be furthermore described as follows:</p>
 <ol class="arabic simple">
 <li>State &#8220;initial&#8221; indicates that a transaction has successfully been
@@ -283,7 +291,7 @@ guarantees uniqueness can be used.</p>
 </tr>
 </tbody>
 </table>
-<p>The transaction is recorded in the system. The first phase of the 2PC is
+<p>The transaction is recorded in the system. The first phase of the MPC is
 done. A user can be sure that the transaction is getting processed
 eventually.</p>
 <div class="admonition note">
@@ -294,7 +302,7 @@ updated nor is it used by any other operation.</p>
 </div>
 <div class="section" id="state-in-progress">
 <span id="transactions-state-inprogress"></span><h3>State: In Progress<a class="headerlink" href="#state-in-progress" title="Permalink to this headline">¶</a></h3>
-<p>The second phase of the 2PC starts. The transaction is marked as &#8220;in progress&#8221;.</p>
+<p>The second phase of the MPC starts. The transaction is marked as &#8220;in progress&#8221;.</p>
 <table border="1" class="docutils">
 <colgroup>
 <col width="7%" />
@@ -566,7 +574,7 @@ sufficiently high enough balance.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.1.0',
+            VERSION:'0.1.2',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

@@ -4,7 +4,7 @@ Transaction System
 This prototype safely processes a user transaction in a shared nothing
 environment, where no centralised transaction manager is required. This is
 achieved by the append-only technique in combination with a suitable data
-model and a two-phase commit protocol. Once a transaction is persisted in
+model and a multi-phase commit protocol. Once a transaction is persisted in
 the transactions table, it can always be repaired.
 
 The Theory Behind
@@ -70,11 +70,11 @@ Data model
     ) PARTITIONED BY (user_id);
 
 
-Two-Phase Commit Protocol
-.........................
+Multi-Phase Commit Protocol
+...........................
 
-The 2PC used in this work differs from a usual 2PC. Usually, a 2PC
-comprises a coordinator and many client nodes (i.e. cohorts). The
+The multi-phase commit protocol (MPC) used in this work is very similar to a
+usual 2PC. Usually, a 2PC comprises a coordinator and many client nodes (i.e. cohorts). The
 coordinator initiates the protocol and decides whether to commit or abort a
 transaction. In the first phase (also called "commit request phase" or
 "voting phase") the coordinator sends a "query to commit" message to all
@@ -85,7 +85,7 @@ to proceed by committing or aborting the transaction. If one cohort replies
 with abort, the transaction will be aborted. If all clients agree (i.e. all
 reply with success), the transaction will be committed `[Wik14]`_ .
 
-The 2PC used in this work differs in two major parts. An application node
+The MPC used in this work differs in three major parts. An application node
 is not connected with any other application node. An application node
 communicates with the Crate Data cluster (and the load balancer) only. A
 newly issued transaction by a user is redirected by the proxy to one
@@ -105,13 +105,22 @@ because each record involved in a transaction has a state indicating if the
 particular record is allowed to be used in any further operations (i.e.
 calculating a user its balance).
 
+The third major difference is the division of the phases. The MPC still
+consists of two phases, but while the first phase only guarantees that the
+issued transaction is recorded, the second phase does all the heavy work
+and performs all further steps which are necessary. The first phase is
+described through :ref:`transactions_state_initial`, the second phase is described through
+sections :ref:`transactions_state_initial`,
+:ref:`transactions_state_inprogress`, :ref:`transactions_state_committed`,
+and :ref:`transactions_state_finished`.
+
 
 Definition of a User Transaction
 ................................
 
 A transaction is split into four states; "initial", "in progress",
 "committed", and "finished". Each state of a transaction is transitioned by
-one ore more steps which are performed using a 2PC protocol. The states can
+one ore more steps which are performed using the MPC protocol. The states can
 be furthermore described as follows:
 
 1. State "initial" indicates that a transaction has successfully been
@@ -165,7 +174,7 @@ The user 'elon_musk' wants to transfer 1000 of his balance to
 | 47 | 10     | 11        | 1000   | "initial" | ...       |
 +----+--------+-----------+--------+-----------+-----------+
 
-The transaction is recorded in the system. The first phase of the 2PC is
+The transaction is recorded in the system. The first phase of the MPC is
 done. A user can be sure that the transaction is getting processed
 eventually.
 
@@ -179,7 +188,7 @@ eventually.
 State: In Progress
 ..................
 
-The second phase of the 2PC starts. The transaction is marked as "in progress".
+The second phase of the MPC starts. The transaction is marked as "in progress".
 
 +----------------------------------------------------------------+
 | transactions                                                   |
