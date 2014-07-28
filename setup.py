@@ -54,7 +54,6 @@ REQUIRES = [
     'lovely.pyrest',
     'pyramid',
     'pyramid_mailer',
-    'requests',
     'urllib3',
     'zope.sqlalchemy',
 ]
@@ -62,6 +61,7 @@ REQUIRES = [
 TEST_REQUIRES = REQUIRES + [
     'lovely.testlayers',
     'mock>=1.0.1',
+    'requests',
     'zope.testing',
     'webtest',
     'zc.customdoctests>=1.0.1'
