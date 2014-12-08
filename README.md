@@ -9,7 +9,7 @@ other application node and no centralised application node is required
 (i.e. no there is no single point of failure).
 
 The transaction system relies on a combination of the `append-only`-technique,
-a suitable data model and a 2PC (see `./docs`).
+a suitable data model and a multi-phase commit protocol (MPC, see `./docs`).
 
 (It shall be mentioned: The project is in `research condition`. Meaning, it
 is sparsely documented and not ready for a production setup.)
@@ -54,7 +54,7 @@ POST /users
 ```
 POST /transactions
     Issue a new transaction. This endpoint *does not* initiate the 2. phase
-    of the 2PC immediately.
+    of the MPC immediately.
 
     Data:
     {
@@ -66,7 +66,7 @@ POST /transactions
 ```
 ```
 POST /transactions/immediately
-    Issue a new transaction. Immediately initiates the 2. phase of the 2PC.
+    Issue a new transaction. Immediately initiates the 2. phase of the MPC.
 
     Data:
     'see POST /transactions'
@@ -74,7 +74,7 @@ POST /transactions/immediately
 ```
 ```
 POST /process
-    Initialises the 2. phase of the 2PC.
+    Initialises the 2. phase of the MPC.
 
     No data required.
 ```
@@ -211,9 +211,9 @@ concurrently (e.g. ``-c 100`` instantiates 100 threads).
     ./bin/u2u_transactions -i -t 200 -c 100
 
 By default, the script uses the endpoint ``/transactions``. This gives a
-developer to insert transactions, but the 2. phase of the 2PC will be started.
+developer to insert transactions, but the 2. phase of the MPC will be started.
 The parameter ``-i`` uses the endpoint ``/transactions/immediately`` and thus,
-the 2. phase of the 2PC is immediately started.
+the 2. phase of the MPC is immediately started.
 
 To verify, run the two commands:
 
